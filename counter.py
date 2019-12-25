@@ -1,9 +1,9 @@
 import xml.etree.ElementTree as ET
 from collections import Counter
-from string import punctuation
 
 words_counter = Counter()
-wrong_words = []
+non_alphabetical_words = Counter()
+defect_words_counter = Counter()
 
 
 def all_words():
@@ -16,16 +16,15 @@ def all_words():
 
 def words_with_non_alphabetical_symbols():
     print('Words with non-alphabetical symbols:')
-    for word in words_counter.most_common():
-        if not word[0].isalpha():
-            print(word)
+    for word in non_alphabetical_words.most_common():
+        print(word)
     print('\n' * 4)
 
 
 def defect_words():
     print('Defect words:')
-    for word in wrong_words:
-        symbols_ord = ' '.join([str(ord(s)) for s in word])
+    for word in defect_words_counter.most_common():
+        symbols_ord = ' '.join([str(ord(s)) for s in word[0]])
         print(f'{word}                {symbols_ord}')
     print('\n' * 4)
 
@@ -39,19 +38,24 @@ def not_classified_words():
 
 
 if __name__ == "__main__":
-    tree = ET.parse('Fuchs - Продавец специй.fb2')
+    tree = ET.parse('Шабанова - Одной дорогой.fb2')
     root = tree.getroot()
 
     for paragraph in root.iter('{http://www.gribuser.ru/xml/fictionbook/2.0}p'):
         if paragraph.text:
             split_text = paragraph.text.split()
-            words = [word.strip(punctuation).strip(',.…!«»?-–—1234567890()') for word in split_text]
+            words = [word.strip(''',.…!«»?-–—'"():;„“''') for word in split_text]
             for word in words:
-                if word and word.count('-') < 3 and not any(
-                        not (1040 <= ord(symbol) <= 1103 or ord(symbol) in [45, 1025, 1105]) for symbol in word):
-                    words_counter[word.lower()] += 1
-                elif word:
-                    wrong_words.append(word.lower())
+                if word:
+                    if word.count('-') < 3 and not any(
+                            not (1040 <= ord(symbol) <= 1103 or ord(symbol) in [45, 1025, 1105]) for symbol in word):
+                        if word.isalpha():
+                            words_counter[word.lower()] += 1
+                        else:
+                            non_alphabetical_words[word.lower()] += 1
+                    elif not word.isdigit() and any(
+                            1040 <= ord(symbol) <= 1103 or ord(symbol) in [1025, 1105] for symbol in word):
+                        defect_words_counter[word.lower()] += 1
     all_words()
     words_with_non_alphabetical_symbols()
     defect_words()
